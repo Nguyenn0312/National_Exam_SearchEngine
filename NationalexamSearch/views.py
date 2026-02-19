@@ -7,13 +7,13 @@ def search_results(request):
     results_queryset = []
 
     if query:
-        # 1. Search by SBD (ID)
+        #Search by SBD (ID)
         if query.isdigit():
             results_queryset = ExamResult.objects.filter(sbd=query)
         
-        # 2. Search by Subject Name
+        #Search by Subject Name
         else:
-            # Check if the query matches one of your database column names
+            #Check if the query matches database column names
             valid_subjects = ['math', 'literature', 'physic', 'chemistry', 'biology', 'history', 'geography', 'civic', 'language_score']
             
             if query in valid_subjects:
@@ -21,7 +21,7 @@ def search_results(request):
                 filter_kwargs = {f"{query}__isnull": False}
                 results_queryset = ExamResult.objects.filter(**filter_kwargs)[:100]
 
-    # 3. Process ALL results into the dictionary format for the HTML
+    # Process results into the dictionary format for the HTML
     processed_results = []
     field_names = ['literature', 'math', 'physic', 'chemistry', 'biology', 'history', 'geography', 'civic', 'language_score']
 
