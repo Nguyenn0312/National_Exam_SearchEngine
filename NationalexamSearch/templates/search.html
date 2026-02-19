@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>National Exam Results</title>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col items-center py-20">
+
+    <h1 class="text-4xl font-bold text-slate-800 mb-2">✓ National Exam Results</h1>
+    <p class="text-slate-500 mb-8">Search by SBD or Subject name</p>
+
+    <form action="" method="GET" class="w-full max-w-2xl px-4 flex gap-2">
+        <input type="text" name="q" placeholder="Enter SBD or Subject..." 
+               class="w-full p-4 rounded-lg border border-slate-200 shadow-sm focus:ring-2 focus:ring-blue-400 outline-none">
+        <button type="submit" class="bg-blue-500 text-white px-8 py-4 rounded-lg font-bold hover:bg-blue-600 transition">
+            Search
+        </button>
+    </form>
+
+    <div class="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl px-4">
+        {% for student in results %}
+<div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition flex flex-col">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-blue-600 text-sm">SBD: {{ student.sbd }}</h3>
+        <span class="text-[10px] bg-slate-100 px-2 py-1 rounded text-slate-500 uppercase font-bold">Result</span>
+    </div>
+
+    <div class="space-y-3">
+        {% for sub in student.subjects %}
+        <div class="flex justify-between items-center border-b border-slate-50 pb-2">
+            <span class="text-slate-500 text-sm">{{ sub.name }}</span>
+            <span class="font-bold text-slate-800">{{ sub.score }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="mt-auto pt-4">
+        <div class="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
+            <div class="bg-green-400 h-full" style="width: 85%"></div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+    </div>
+
+</body>
+</html>
