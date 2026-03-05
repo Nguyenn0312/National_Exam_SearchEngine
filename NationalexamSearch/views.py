@@ -1,9 +1,11 @@
 from django.shortcuts import render
 from django.db.models import Q
 from .models import ExamResult
+from .serializers import ExamResultSerializer
+from rest_framework import generics, filters
 
-def search_results(request):
-    query = request.GET.get('q', '').strip().lower()
+def search_results(request, search_query=None):
+    query = search_query.strip().lower() if search_query else ''
     results_queryset = []
 
     if query:
@@ -39,3 +41,21 @@ def search_results(request):
         })
 
     return render(request, 'search.html', {'results': processed_results, 'query': query})
+
+class StudentDetailAPI(generics.RetrieveAPIView):
+          queryset = ExamResult.objects.all()
+          serializer_class = ExamResultSerializer
+          lookup_field = 'sbd'
+        # Unified Search & Filter Endpoint
+class StudentListAPI(generics.ListAPIView):
+          queryset = ExamResult.objects.all()
+          serializer_class = ExamResultSerializer
+          filter_backends = [filters.SearchFilter]
+          search_fields = ['sbd'] 
+       # Specialized Filtering Endpoint
+class FilterAPI(generics.ListAPIView):
+         queryset = ExamResult.objects.all()
+         serializer_class = ExamResultSerializer
+    
+       # This enables /api/filter?math=9.0&literature=8.5
+         filterset_fields = ['math', 'literature', 'physic', 'chemistry']
