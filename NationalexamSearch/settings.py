@@ -79,9 +79,9 @@ WSGI_APPLICATION = 'NationalexamSearch.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'national_examsdb',
-        'USER': 'root',
-        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'NAME': 'national_exams_db',
+        'USER': 'django',
+        'PASSWORD': '12Impasse2005#Verdi',
         'HOST': '127.0.0.1',
         'PORT': '3306',
     }
