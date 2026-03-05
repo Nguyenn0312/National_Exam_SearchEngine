@@ -16,9 +16,13 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from .views import StudentListAPI, FilterAPI, StudentDetailAPI
 from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.search_results, name='search'),
+    path('', views.search_results, name='home'), 
+    path('search/<str:search_query>/', views.search_results, name='search_clean'), 
+    path('api/search/<int:sbd>/', StudentDetailAPI.as_view(), name='api-student-detail'),
+    path('api/filter/', FilterAPI.as_view(), name='api-filter'),
 ]
