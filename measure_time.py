@@ -1,8 +1,8 @@
 import requests
 import time
 
-# The URL you are testing (using your filter endpoint)
-url = "http://localhost:8000/api/filter/?math=10"
+# The URL I am testing 
+url = "http://127.0.0.1:8000/api/filter/?math=10"
 
 print("--- Starting 10-Request Performance Test ---")
 print(f"Target URL: {url}\n")

@@ -4,10 +4,10 @@ from statistics import mean
 
 import aiohttp  #pip install aiohttp
 
-URL = "http://127.0.0.1:8000/search/math"
+URL = "http://127.0.0.1:8000/api/filter/?math=10"
 NB_REQUESTS = 1000
-CONCURRENCY = 100
-TIMEOUT_SECONDS = 60
+CONCURRENCY = 10
+TIMEOUT_SECONDS = 120
 
 
 def percentile(sorted_values, p):

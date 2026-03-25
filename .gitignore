@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 *.sqlite3
 *.log
+*.swp
 db.sqlite3
 .env
 .vscode/
