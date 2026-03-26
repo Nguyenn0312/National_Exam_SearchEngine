@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title> National Exam Results - Go Speed </title>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col items-center py-20">
+
+    <h1 class="text-4xl font-bold text-slate-800 mb-2"> National Exam Results</h1>
+    <p class="text-slate-500 mb-8">Search by SBD (Powered by Go)</p>
+
+   <form id="searchForm" class="flex gap-2">
+    <input type="text" id="searchInput" placeholder="Enter SBD..." required class="border rounded px-4 py-2">
+    <button type="submit" class="bg-blue-500 text-white px-6 py-2 rounded">Search</button>
+   </form>
+
+    <div id="resultsContainer" class="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl px-4">
+        </div>
+
+    <script>
+        const form = document.getElementById('searchForm');
+        const container = document.getElementById('resultsContainer');
+
+        form.onsubmit = async function(event) {
+            event.preventDefault();
+            const sbd = document.getElementById('searchInput').value.trim();
+            
+            // Call the Go REST API
+            const response = await fetch(`/api/search/${sbd}`);
+            if (response.ok) {
+                const student = await response.json();
+                renderResults([student]);
+            } else {
+                container.innerHTML = `<p class="text-red-500">Student not found.</p>`;
+            }
+        };
+
+        function renderResults(students) {
+            container.innerHTML = students.map(student => `
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-blue-600 text-sm">SBD: ${student.sbd}</h3>
+                    </div>
+                    <div class="space-y-3">
+                        ${Object.entries(student)
+                            .filter(([key, val]) => key !== 'sbd' && val !== 0)
+                            .map(([key, val]) => `
+                                <div class="flex justify-between items-center border-b border-slate-50 pb-2">
+                                    <span class="text-slate-500 text-sm">${key.toUpperCase()}</span>
+                                    <span class="font-bold text-slate-800">${val}</span>
+                                </div>
+                            `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>
