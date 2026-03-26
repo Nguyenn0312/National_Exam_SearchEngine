@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/bytedance/sonic"
 	"github.com/redis/go-redis/v9"
 	"github.com/valyala/fasthttp"
-	"golang.org/x/sync/singleflight" // REQUIRED: Run 'go mod tidy' to get this
+	"golang.org/x/sync/singleflight"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -43,8 +44,11 @@ var (
 	db        *gorm.DB
 	rdb       *redis.Client
 	ctx       = context.Background()
-	cacheChan = make(chan cacheTask, 20000)
+	cacheChan = make(chan cacheTask, 50000)
 	group     singleflight.Group // Fixes the "Thundering Herd"
+	resultPool = sync.Pool{
+		New: func() interface{} { return new(ExamResult) },
+	}
 )
 
 // ================= WORKER =================
@@ -100,7 +104,7 @@ func main() {
         Protocol: 2,                
     })
 
-    for i := 0; i < 20; i++ {
+    for i := 0; i < 50; i++ {
         go redisWorker()
     }
 
@@ -138,26 +142,35 @@ func handleIDSearch(ctxx *fasthttp.RequestCtx, sbdStr string) {
 	// 1. Redis Check
 	val, err := rdb.Get(ctx, cacheKey).Bytes()
 	if err == nil {
+		if string(val) == "nf" {
+			ctxx.SetStatusCode(404)
+			ctxx.SetBodyString("not found (cached)")
+			return
+		}
 		ctxx.Response.Header.Set("Content-Type", "application/json")
-		ctxx.Response.Header.Set("X-Cache", "HIT")
 		ctxx.SetBody(val)
 		return
 	}
 
 	// 2. Singleflight DB Fetch
+
 	data, err, _ := group.Do(sbdStr, func() (interface{}, error) {
-		var student ExamResult
-		if err := db.Table("exam_results").Where("sbd = ?", sbdStr).First(&student).Error; err != nil {
+		student := resultPool.Get().(*ExamResult)
+		defer resultPool.Put(student)
+
+		if err := db.Table("exam_results").Where("sbd = ?", sbdStr).First(student).Error; err != nil {
+			select {
+			case cacheChan <- cacheTask{key: cacheKey, data: []byte("nf")}:
+			default:
+			}
 			return nil, err
 		}
 
 		jsonData, _ := sonic.Marshal(student)
-
 		select {
 		case cacheChan <- cacheTask{key: cacheKey, data: jsonData}:
 		default:
 		}
-
 		return jsonData, nil
 	})
 
@@ -168,7 +181,6 @@ func handleIDSearch(ctxx *fasthttp.RequestCtx, sbdStr string) {
 	}
 
 	ctxx.Response.Header.Set("Content-Type", "application/json")
-	ctxx.Response.Header.Set("X-Cache", "MISS")
 	ctxx.SetBody(data.([]byte))
 }
 

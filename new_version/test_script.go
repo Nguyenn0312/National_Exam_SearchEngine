@@ -41,7 +41,7 @@ func main() {
 	var wg sync.WaitGroup
 	reqPerWorker := NB_REQUESTS / CONCURRENCY
 
-	fmt.Printf("🚀 Starting High-Perf Load Test: %d requests\n", NB_REQUESTS)
+	fmt.Printf("Starting High-Perf Load Test: %d requests\n", NB_REQUESTS)
 	startTime := time.Now()
 
 	for i := 0; i < CONCURRENCY; i++ {
