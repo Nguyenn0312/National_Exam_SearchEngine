@@ -173,30 +173,64 @@ func handleIDSearch(ctxx *fasthttp.RequestCtx, sbdStr string) {
 }
 
 func handleFilterSearch(ctxx *fasthttp.RequestCtx) {
-	query := db.Table("exam_results")
-	hasFilter := false
-
-	for _, sub := range subjects {
-		val := ctxx.QueryArgs().Peek(sub)
-		if len(val) > 0 {
-			query = query.Where(fmt.Sprintf("%s = ?", sub), string(val))
-			hasFilter = true
-		}
-	}
-
-	if !hasFilter {
+	// 1. Generate a Unique Cache Key based on the query string
+	// Example: "filter:math=10&literature=8"
+	queryString := string(ctxx.QueryArgs().QueryString())
+	if queryString == "" {
 		ctxx.SetStatusCode(400)
 		ctxx.SetBodyString("provide a filter")
 		return
 	}
+	cacheKey := "filter:" + queryString
 
-	var results []ExamResult
-	if err := query.Limit(100).Find(&results).Error; err != nil {
+	// 2. Redis Check
+	val, err := rdb.Get(ctx, cacheKey).Bytes()
+	if err == nil {
+		ctxx.Response.Header.Set("Content-Type", "application/json")
+		ctxx.Response.Header.Set("X-Cache", "HIT")
+		ctxx.SetBody(val)
+		return
+	}
+
+	// 3. Singleflight DB Fetch
+	// Coalesces multiple identical filter requests into one DB call
+	data, err, _ := group.Do(cacheKey, func() (interface{}, error) {
+		query := db.Table("exam_results")
+		hasFilter := false
+
+		for _, sub := range subjects {
+			val := ctxx.QueryArgs().Peek(sub)
+			if len(val) > 0 {
+				query = query.Where(fmt.Sprintf("%s = ?", sub), string(val))
+				hasFilter = true
+			}
+		}
+
+		if !hasFilter {
+			return nil, fmt.Errorf("no filter")
+		}
+
+		var results []ExamResult
+		if err := query.Limit(100).Find(&results).Error; err != nil {
+			return nil, err
+		}
+
+		jsonData, _ := sonic.Marshal(results)
+		// 4. Asynchronous Cache Update
+		select {
+		case cacheChan <- cacheTask{key: cacheKey, data: jsonData}:
+		default:
+		}
+
+		return jsonData, nil
+	})
+
+	if err != nil {
 		ctxx.SetStatusCode(500)
 		return
 	}
 
-	jsonData, _ := sonic.Marshal(results)
 	ctxx.Response.Header.Set("Content-Type", "application/json")
-	ctxx.SetBody(jsonData)
+	ctxx.Response.Header.Set("X-Cache", "MISS")
+	ctxx.SetBody(data.([]byte))
 }
