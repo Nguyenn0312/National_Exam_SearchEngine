@@ -4,7 +4,7 @@ from statistics import mean
 
 import aiohttp  #pip install aiohttp
 
-URL = "http://localhost/api/search/24008611""
+URL = "http://localhost/api/search/24008611"
 NB_REQUESTS = 1000
 CONCURRENCY = 100
 TIMEOUT_SECONDS = 60
